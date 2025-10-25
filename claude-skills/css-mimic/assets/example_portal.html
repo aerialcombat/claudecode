@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Technology - Topic Portal Example</title>
+    <meta name="description" content="Example topic portal page showcasing CSS structure">
+
+    <!-- Link to your generated CSS -->
+    <link rel="stylesheet" href="base_template.css">
+    <!-- Or your custom generated CSS -->
+    <!-- <link rel="stylesheet" href="generated_styles.css"> -->
+</head>
+<body>
+    <!-- Sticky Header -->
+    <header class="sticky-header">
+        <div class="container flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold m-0">
+                    <a href="/" style="text-decoration: none;">Dark</a>
+                </h1>
+                <p class="text-sm m-0 text-muted">Topic Portal Example</p>
+            </div>
+            <!-- Optional: Add navigation, search, theme toggle here -->
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="margin-top: 1.5rem;">
+        <!-- Topic Header Section -->
+        <section class="mb-8">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold mb-2">Technology</h1>
+                <p class="text-base text-muted mb-3">
+                    Latest technology news, tutorials, and insights covering software development, AI, cloud computing, and more.
+                </p>
+
+                <!-- Topic Keywords -->
+                <div class="flex flex-wrap gap-2">
+                    <span class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Programming</span>
+                    <span class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">AI/ML</span>
+                    <span class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Cloud</span>
+                    <span class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">DevOps</span>
+                </div>
+            </div>
+
+            <!-- Content Count -->
+            <h2 class="text-lg font-semibold mb-4">Content (15 articles)</h2>
+
+            <!-- Content List -->
+            <div class="flex flex-col gap-4">
+                <!-- Content Preview Card 1 -->
+                <article class="card">
+                    <h3 class="text-xl font-semibold mb-2">
+                        <a href="/content/1">Introduction to Modern Web Development</a>
+                    </h3>
+                    <p class="text-base text-muted mb-3">
+                        A comprehensive guide to building modern web applications using the latest technologies and best practices.
+                    </p>
+
+                    <!-- Metadata Bar -->
+                    <div class="flex flex-wrap gap-3 items-center text-sm text-muted">
+                        <span class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Article</span>
+                        <span>English</span>
+                        <time>2025-10-20</time>
+                        <span>Quality: 92%</span>
+                        <span>Views: 1,234</span>
+                    </div>
+
+                    <p class="text-xs text-muted mt-2">By Jane Developer</p>
+                </article>
+
+                <!-- Content Preview Card 2 -->
+                <article class="card">
+                    <h3 class="text-xl font-semibold mb-2">
+                        <a href="/content/2">Understanding Machine Learning Fundamentals</a>
+                    </h3>
+                    <p class="text-base text-muted mb-3">
+                        Dive into the core concepts of machine learning, from supervised learning to neural networks.
+                    </p>
+
+                    <div class="flex flex-wrap gap-3 items-center text-sm text-muted">
+                        <span class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Tutorial</span>
+                        <span>English</span>
+                        <time>2025-10-19</time>
+                        <span>Quality: 88%</span>
+                        <span>Views: 2,567</span>
+                    </div>
+
+                    <p class="text-xs text-muted mt-2">By AI Researcher</p>
+                </article>
+
+                <!-- Content Preview Card 3 -->
+                <article class="card">
+                    <h3 class="text-xl font-semibold mb-2">
+                        <a href="/content/3">Cloud Architecture Best Practices</a>
+                    </h3>
+                    <p class="text-base text-muted mb-3">
+                        Learn how to design scalable, resilient cloud infrastructure for modern applications.
+                    </p>
+
+                    <div class="flex flex-wrap gap-3 items-center text-sm text-muted">
+                        <span class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Guide</span>
+                        <span>English</span>
+                        <time>2025-10-18</time>
+                        <span>Quality: 95%</span>
+                        <span>Views: 3,421</span>
+                    </div>
+
+                    <p class="text-xs text-muted mt-2">By Cloud Architect</p>
+                </article>
+
+                <!-- Content Preview Card 4 (Featured) -->
+                <article class="card" style="border-left: 4px solid var(--color-primary);">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold" style="color: var(--color-primary);">FEATURED</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">
+                        <a href="/content/4">The Future of Artificial Intelligence in 2025</a>
+                    </h3>
+                    <p class="text-base text-muted mb-3">
+                        Explore the latest trends and breakthroughs in AI technology and what they mean for the future.
+                    </p>
+
+                    <div class="flex flex-wrap gap-3 items-center text-sm text-muted">
+                        <span class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Article</span>
+                        <span>English</span>
+                        <time>2025-10-17</time>
+                        <span>Quality: 98%</span>
+                        <span>Views: 15,892</span>
+                    </div>
+
+                    <p class="text-xs text-muted mt-2">By Tech Futurist</p>
+                </article>
+
+                <!-- Content Preview Card 5 -->
+                <article class="card">
+                    <h3 class="text-xl font-semibold mb-2">
+                        <a href="/content/5">DevOps Pipeline Automation Guide</a>
+                    </h3>
+                    <p class="text-base text-muted mb-3">
+                        Step-by-step guide to building automated CI/CD pipelines for continuous deployment.
+                    </p>
+
+                    <div class="flex flex-wrap gap-3 items-center text-sm text-muted">
+                        <span class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Tutorial</span>
+                        <span>English</span>
+                        <time>2025-10-16</time>
+                        <span>Quality: 90%</span>
+                        <span>Views: 987</span>
+                    </div>
+
+                    <p class="text-xs text-muted mt-2">By DevOps Engineer</p>
+                </article>
+            </div>
+
+            <!-- Pagination (Optional) -->
+            <div class="flex justify-center items-center gap-4 mt-8">
+                <button class="btn btn-primary">Previous</button>
+                <span class="text-sm">Page 1 of 3</span>
+                <button class="btn btn-primary">Next</button>
+            </div>
+        </section>
+
+        <!-- Related Topics (Optional) -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Related Topics</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        <a href="/topic/programming">Programming</a>
+                    </h3>
+                    <p class="text-sm text-muted">124 articles</p>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        <a href="/topic/web-development">Web Development</a>
+                    </h3>
+                    <p class="text-sm text-muted">89 articles</p>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        <a href="/topic/data-science">Data Science</a>
+                    </h3>
+                    <p class="text-sm text-muted">67 articles</p>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        <a href="/topic/cybersecurity">Cybersecurity</a>
+                    </h3>
+                    <p class="text-sm text-muted">45 articles</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: var(--color-bg-secondary); padding: 2rem 0; margin-top: 4rem; text-align: center;">
+        <div class="container">
+            <p class="text-sm text-muted m-0">Topic Portal v1.0.0</p>
+            <p class="text-xs text-muted mt-2">Built with modern CSS and responsive design</p>
+        </div>
+    </footer>
+</body>
+</html>

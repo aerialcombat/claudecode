@@ -1,0 +1,273 @@
+package llm
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+)
+
+// ClaudeExtractor implements TopicExtractor for Anthropic Claude
+type ClaudeExtractor struct {
+	apiKey     string
+	config     *Config
+	httpClient *http.Client
+	rateLimiter *RateLimiter
+}
+
+// NewClaudeExtractor creates a new Claude-based topic extractor
+func NewClaudeExtractor(apiKey string, config *Config) (*ClaudeExtractor, error) {
+	if apiKey == "" {
+		return nil, ErrInvalidAPIKey
+	}
+	if config == nil {
+		config = DefaultConfig()
+	}
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
+	var rateLimiter *RateLimiter
+	if config.EnableRateLimit {
+		rateLimiter = NewRateLimiter(config.RequestsPerMin)
+	}
+
+	return &ClaudeExtractor{
+		apiKey: apiKey,
+		config: config,
+		httpClient: &http.Client{
+			Timeout: config.Timeout,
+		},
+		rateLimiter: rateLimiter,
+	}, nil
+}
+
+func (c *ClaudeExtractor) Provider() string {
+	return "claude"
+}
+
+func (c *ClaudeExtractor) ExtractTopics(ctx context.Context, content Content) ([]Topic, error) {
+	result, err := c.ExtractTopicsWithMetadata(ctx, content)
+	if err != nil {
+		return nil, err
+	}
+	return result.Topics, nil
+}
+
+func (c *ClaudeExtractor) ExtractTopicsWithMetadata(ctx context.Context, content Content) (*ExtractionResult, error) {
+	start := time.Now()
+
+	// Rate limiting
+	if c.rateLimiter != nil {
+		if err := c.rateLimiter.Wait(ctx); err != nil {
+			return nil, WrapError("rate limit wait failed", err)
+		}
+	}
+
+	// Build prompt using template
+	prompt := c.buildPrompt(content)
+
+	// Call Claude API with retries
+	var topics []Topic
+	var err error
+	for attempt := 0; attempt <= c.config.RetryAttempts; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff
+			backoff := c.config.RetryBackoff * time.Duration(1<<uint(attempt-1))
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+
+		topics, err = c.callClaude(ctx, prompt)
+		if err == nil {
+			break
+		}
+
+		// Don't retry on certain errors
+		if isNonRetryableError(err) {
+			break
+		}
+	}
+
+	if err != nil {
+		return &ExtractionResult{
+			Provider: c.Provider(),
+			Latency:  time.Since(start),
+			Error:    err,
+		}, err
+	}
+
+	// Filter by confidence
+	filtered := make([]Topic, 0, len(topics))
+	for _, topic := range topics {
+		if topic.Confidence >= c.config.MinConfidence {
+			filtered = append(filtered, topic)
+		}
+	}
+
+	// Limit to max topics
+	if len(filtered) > c.config.MaxTopics {
+		filtered = filtered[:c.config.MaxTopics]
+	}
+
+	return &ExtractionResult{
+		Topics:   filtered,
+		Provider: c.Provider(),
+		Latency:  time.Since(start),
+		Cost:     c.EstimateCost(content),
+	}, nil
+}
+
+func (c *ClaudeExtractor) callClaude(ctx context.Context, prompt string) ([]Topic, error) {
+	// Claude API request structure
+	reqBody := map[string]interface{}{
+		"model": "claude-3-5-sonnet-20241022",
+		"max_tokens": c.config.MaxTokens,
+		"temperature": c.config.Temperature,
+		"messages": []map[string]string{
+			{
+				"role": "user",
+				"content": prompt,
+			},
+		},
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, WrapError("failed to marshal request", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, WrapError("failed to create request", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", c.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, WrapError("HTTP request failed", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var apiResp struct {
+		Content []struct {
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, WrapError("failed to decode response", err)
+	}
+
+	if len(apiResp.Content) == 0 {
+		return nil, ErrInvalidJSON
+	}
+
+	// Extract JSON from response (Claude may wrap in markdown)
+	text := apiResp.Content[0].Text
+	topics, err := c.parseTopics(text)
+	if err != nil {
+		return nil, WrapError("failed to parse topics", err)
+	}
+
+	return topics, nil
+}
+
+func (c *ClaudeExtractor) parseTopics(text string) ([]Topic, error) {
+	// Strip markdown code blocks if present
+	text = strings.TrimSpace(text)
+	if strings.HasPrefix(text, "```json") {
+		text = strings.TrimPrefix(text, "```json")
+		text = strings.TrimSuffix(text, "```")
+		text = strings.TrimSpace(text)
+	} else if strings.HasPrefix(text, "```") {
+		text = strings.TrimPrefix(text, "```")
+		text = strings.TrimSuffix(text, "```")
+		text = strings.TrimSpace(text)
+	}
+
+	var topics []Topic
+	if err := json.Unmarshal([]byte(text), &topics); err != nil {
+		return nil, err
+	}
+
+	return topics, nil
+}
+
+func (c *ClaudeExtractor) buildPrompt(content Content) string {
+	// Use Claude-optimized prompt format with XML tags
+	return fmt.Sprintf(`You are an expert content curator. Extract the most relevant topics from this content.
+
+<content>
+Title: %s
+URL: %s
+Description: %s
+
+Body:
+%s
+</content>
+
+<instructions>
+Before providing JSON output, think through:
+1. What are the 3-5 main topics discussed?
+2. Which are specific enough but not too narrow?
+3. What confidence level (0.0-1.0) for each?
+
+Then provide a JSON array with this structure:
+[
+  {
+    "name": "topic-slug",
+    "display_name": "Topic Name",
+    "confidence": 0.95,
+    "reasoning": "Why this topic was extracted"
+  }
+]
+
+Guidelines:
+- name: lowercase, hyphen-separated (e.g., "machine-learning")
+- display_name: human-readable (e.g., "Machine Learning")
+- confidence: 0.6-1.0 (only include topics >= 0.6)
+- reasoning: 1-2 sentences explaining why
+- Limit to 5 topics maximum
+- Order by confidence (highest first)
+</instructions>
+
+Respond with ONLY the JSON array:`, content.Title, content.URL, content.Description, content.Body)
+}
+
+func (c *ClaudeExtractor) EstimateCost(content Content) float64 {
+	// Rough token estimation: ~1 token per 4 characters
+	inputTokens := (len(content.Title) + len(content.URL) + len(content.Description) + len(content.Body) + 500) / 4
+	outputTokens := c.config.MaxTokens
+
+	// Claude 3.5 Sonnet pricing (as of 2024)
+	// Input: $3 per 1M tokens, Output: $15 per 1M tokens
+	inputCost := float64(inputTokens) / 1000000 * 3.0
+	outputCost := float64(outputTokens) / 1000000 * 15.0
+
+	return inputCost + outputCost
+}
+
+func isNonRetryableError(err error) bool {
+	// Don't retry on validation errors, invalid API key, etc.
+	if err == ErrInvalidAPIKey || err == ErrInvalidJSON {
+		return true
+	}
+	return false
+}

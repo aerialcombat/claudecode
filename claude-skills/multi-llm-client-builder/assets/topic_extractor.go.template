@@ -1,0 +1,128 @@
+package llm
+
+import (
+	"context"
+	"time"
+)
+
+// Topic represents an extracted topic with confidence score
+type Topic struct {
+	Name        string  `json:"name"`         // Lowercase, hyphen-separated (e.g., "machine-learning")
+	DisplayName string  `json:"display_name"` // Human-readable (e.g., "Machine Learning")
+	Confidence  float64 `json:"confidence"`   // 0.0-1.0
+	Reasoning   string  `json:"reasoning"`    // Why this topic was extracted
+}
+
+// Content represents the input content for topic extraction
+type Content struct {
+	Title       string
+	URL         string
+	Description string
+	Body        string
+}
+
+// ExtractionResult contains topics and metadata
+type ExtractionResult struct {
+	Topics   []Topic
+	Provider string        // Which provider was used
+	Latency  time.Duration // How long it took
+	Cost     float64       // Estimated cost in USD (optional)
+	Error    error         // Any error that occurred
+}
+
+// TopicExtractor is the unified interface for all LLM providers
+type TopicExtractor interface {
+	// ExtractTopics analyzes content and returns extracted topics
+	ExtractTopics(ctx context.Context, content Content) ([]Topic, error)
+
+	// ExtractTopicsWithMetadata returns topics plus provider metadata
+	ExtractTopicsWithMetadata(ctx context.Context, content Content) (*ExtractionResult, error)
+
+	// Provider returns the name of the LLM provider
+	Provider() string
+
+	// EstimateCost returns estimated cost for the given content (in USD)
+	EstimateCost(content Content) float64
+}
+
+// Config holds common configuration for all providers
+type Config struct {
+	// Provider-specific API keys
+	ClaudeAPIKey string
+	OpenAIAPIKey string
+	GeminiAPIKey string
+	GrokAPIKey   string
+	GroqAPIKey   string
+
+	// Common settings
+	Temperature      float64       // 0.0-1.0, default: 0.3
+	MaxTokens        int           // Max response tokens, default: 1000
+	Timeout          time.Duration // Request timeout, default: 30s
+	MinConfidence    float64       // Minimum confidence to include topic, default: 0.6
+	MaxTopics        int           // Maximum topics to return, default: 5
+	RetryAttempts    int           // Number of retry attempts, default: 3
+	RetryBackoff     time.Duration // Backoff between retries, default: 2s
+	EnableRateLimit  bool          // Enable rate limiting, default: true
+	RequestsPerMin   int           // Rate limit, default: 60
+}
+
+// DefaultConfig returns configuration with sensible defaults
+func DefaultConfig() *Config {
+	return &Config{
+		Temperature:     0.3,
+		MaxTokens:       1000,
+		Timeout:         30 * time.Second,
+		MinConfidence:   0.6,
+		MaxTopics:       5,
+		RetryAttempts:   3,
+		RetryBackoff:    2 * time.Second,
+		EnableRateLimit: true,
+		RequestsPerMin:  60,
+	}
+}
+
+// Validate checks if the configuration is valid
+func (c *Config) Validate() error {
+	if c.Temperature < 0 || c.Temperature > 1 {
+		return ErrInvalidTemperature
+	}
+	if c.MinConfidence < 0 || c.MinConfidence > 1 {
+		return ErrInvalidConfidence
+	}
+	if c.MaxTopics < 1 || c.MaxTopics > 10 {
+		return ErrInvalidMaxTopics
+	}
+	return nil
+}
+
+// Common errors
+var (
+	ErrInvalidTemperature = NewError("temperature must be between 0 and 1")
+	ErrInvalidConfidence  = NewError("min_confidence must be between 0 and 1")
+	ErrInvalidMaxTopics   = NewError("max_topics must be between 1 and 10")
+	ErrInvalidAPIKey      = NewError("API key is required")
+	ErrProviderFailed     = NewError("provider request failed")
+	ErrInvalidJSON        = NewError("failed to parse JSON response")
+	ErrRateLimited        = NewError("rate limit exceeded")
+)
+
+// Error represents an LLM client error
+type Error struct {
+	Message string
+	Cause   error
+}
+
+func (e *Error) Error() string {
+	if e.Cause != nil {
+		return e.Message + ": " + e.Cause.Error()
+	}
+	return e.Message
+}
+
+func NewError(message string) *Error {
+	return &Error{Message: message}
+}
+
+func WrapError(message string, cause error) *Error {
+	return &Error{Message: message, Cause: cause}
+}

@@ -1,0 +1,395 @@
+<!-- Modal Component -->
+<!-- Dynamic modal with HTMX content loading -->
+
+{{define "modal-trigger"}}
+<!-- Button or link that opens modal -->
+<button class="btn-modal-trigger"
+        hx-get="/api/modal/{{.ContentID}}"
+        hx-target="body"
+        hx-swap="beforeend"
+        hx-indicator="#modal-loading">
+    {{.TriggerText}}
+</button>
+
+<span id="modal-loading" class="htmx-indicator">
+    로딩 중...
+</span>
+{{end}}
+
+{{define "modal-container"}}
+<!-- This is what the server returns -->
+<div class="modal-overlay" id="modal-{{.ID}}" onclick="closeModal('modal-{{.ID}}')">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title korean-text">{{.Title}}</h2>
+            <button class="modal-close"
+                    onclick="closeModal('modal-{{.ID}}')"
+                    aria-label="닫기">
+                ✕
+            </button>
+        </div>
+
+        <div class="modal-body korean-text">
+            {{.Content}}
+        </div>
+
+        {{if .Actions}}
+        <div class="modal-footer">
+            {{range .Actions}}
+            <button class="{{.Class}}"
+                    {{if .HXPost}}hx-post="{{.HXPost}}"{{end}}
+                    {{if .HXTarget}}hx-target="{{.HXTarget}}"{{end}}
+                    {{if .OnClick}}onclick="{{.OnClick}}"{{end}}>
+                {{.Label}}
+            </button>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+</div>
+
+<script>
+// Add to body when modal appears
+document.body.style.overflow = 'hidden';
+</script>
+{{end}}
+
+{{define "modal-with-form"}}
+<!-- Modal containing a form -->
+<div class="modal-overlay" id="modal-form-{{.ID}}" onclick="closeModal('modal-form-{{.ID}}')">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title korean-text">{{.Title}}</h2>
+            <button class="modal-close"
+                    onclick="closeModal('modal-form-{{.ID}}')"
+                    aria-label="닫기">
+                ✕
+            </button>
+        </div>
+
+        <form hx-post="/api/submit/{{.ID}}"
+              hx-target="#form-result"
+              hx-indicator="#form-loading">
+            <div class="modal-body">
+                {{range .Fields}}
+                <div class="form-group">
+                    <label for="{{.Name}}" class="korean-text">{{.Label}}</label>
+
+                    {{if eq .Type "textarea"}}
+                    <textarea id="{{.Name}}"
+                              name="{{.Name}}"
+                              class="korean-input"
+                              rows="{{.Rows}}"
+                              {{if .Required}}required{{end}}
+                              placeholder="{{.Placeholder}}"></textarea>
+                    {{else}}
+                    <input type="{{.Type}}"
+                           id="{{.Name}}"
+                           name="{{.Name}}"
+                           class="korean-input"
+                           {{if .Required}}required{{end}}
+                           placeholder="{{.Placeholder}}">
+                    {{end}}
+                </div>
+                {{end}}
+
+                <div id="form-result"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn-secondary"
+                        onclick="closeModal('modal-form-{{.ID}}')">
+                    취소
+                </button>
+                <button type="submit" class="btn-primary">
+                    {{.SubmitLabel}}
+                </button>
+                <span id="form-loading" class="htmx-indicator">
+                    처리 중...
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
+
+{{define "modal-confirm"}}
+<!-- Simple confirmation modal -->
+<div class="modal-overlay modal-confirm" id="confirm-{{.ID}}">
+    <div class="modal-dialog modal-dialog-sm">
+        <div class="modal-body text-center">
+            <div class="confirm-icon">⚠️</div>
+            <h3 class="confirm-title korean-text">{{.Message}}</h3>
+            {{if .Description}}
+            <p class="confirm-description korean-text">{{.Description}}</p>
+            {{end}}
+        </div>
+
+        <div class="modal-footer justify-center">
+            <button class="btn-secondary"
+                    onclick="closeModal('confirm-{{.ID}}')">
+                {{.CancelLabel}}
+            </button>
+            <button class="btn-danger"
+                    hx-{{.Method}}="{{.URL}}"
+                    hx-target="{{.Target}}"
+                    hx-swap="{{.Swap}}"
+                    onclick="closeModal('confirm-{{.ID}}')">
+                {{.ConfirmLabel}}
+            </button>
+        </div>
+    </div>
+</div>
+{{end}}
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-dialog-sm {
+    max-width: 400px;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.modal-footer.justify-center {
+    justify-content: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.korean-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif;
+    transition: border-color 0.2s;
+}
+
+.korean-input:focus {
+    outline: none;
+    border-color: #0066cc;
+}
+
+textarea.korean-input {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: #0066cc;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0052a3;
+}
+
+.btn-secondary {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Confirmation modal */
+.modal-confirm .modal-body {
+    padding: 32px 24px;
+}
+
+.confirm-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.confirm-title {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.confirm-description {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .modal-dialog {
+        width: 95%;
+        margin: 20px;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 16px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+    }
+}
+</style>
+
+<script>
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        // Fade out animation
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.remove();
+            document.body.style.overflow = '';
+        }, 200);
+    }
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal-overlay');
+        if (modals.length > 0) {
+            closeModal(modals[modals.length - 1].id);
+        }
+    }
+});
+
+// Handle HTMX events
+document.body.addEventListener('htmx:afterSwap', (event) => {
+    // Check if a modal was added
+    const modal = event.detail.target.querySelector('.modal-overlay');
+    if (modal) {
+        document.body.style.overflow = 'hidden';
+    }
+});
+</script>

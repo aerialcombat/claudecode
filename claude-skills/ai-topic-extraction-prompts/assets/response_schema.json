@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "display_name", "confidence", "reasoning"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+        "description": "Topic slug (lowercase, hyphen-separated)",
+        "examples": ["machine-learning", "react", "golang"]
+      },
+      "display_name": {
+        "type": "string",
+        "description": "Human-readable topic name",
+        "examples": ["Machine Learning", "React", "Golang"]
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "description": "Confidence score for this topic extraction"
+      },
+      "reasoning": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 500,
+        "description": "Brief explanation for why this topic was extracted"
+      }
+    }
+  },
+  "minItems": 0,
+  "maxItems": 5,
+  "description": "Array of extracted topics with confidence scores, ordered by confidence (highest first)"
+}

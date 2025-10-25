@@ -1,0 +1,73 @@
+package llm
+
+import (
+	"fmt"
+)
+
+// Provider represents supported LLM providers
+type Provider string
+
+const (
+	ProviderClaude Provider = "claude"
+	ProviderOpenAI Provider = "openai"
+	ProviderGemini Provider = "gemini"
+	ProviderGrok   Provider = "grok"
+	ProviderGroq   Provider = "groq"
+)
+
+// NewExtractor creates a topic extractor for the specified provider
+func NewExtractor(provider Provider, config *Config) (TopicExtractor, error) {
+	if config == nil {
+		config = DefaultConfig()
+	}
+
+	switch provider {
+	case ProviderClaude:
+		if config.ClaudeAPIKey == "" {
+			return nil, fmt.Errorf("Claude API key is required")
+		}
+		return NewClaudeExtractor(config.ClaudeAPIKey, config)
+
+	case ProviderOpenAI:
+		if config.OpenAIAPIKey == "" {
+			return nil, fmt.Errorf("OpenAI API key is required")
+		}
+		return NewOpenAIExtractor(config.OpenAIAPIKey, config)
+
+	case ProviderGemini:
+		if config.GeminiAPIKey == "" {
+			return nil, fmt.Errorf("Gemini API key is required")
+		}
+		return NewGeminiExtractor(config.GeminiAPIKey, config)
+
+	case ProviderGrok:
+		if config.GrokAPIKey == "" {
+			return nil, fmt.Errorf("Grok API key is required")
+		}
+		return NewGrokExtractor(config.GrokAPIKey, config)
+
+	case ProviderGroq:
+		if config.GroqAPIKey == "" {
+			return nil, fmt.Errorf("Groq API key is required")
+		}
+		return NewGroqExtractor(config.GroqAPIKey, config)
+
+	default:
+		return nil, fmt.Errorf("unsupported provider: %s", provider)
+	}
+}
+
+// NewMultiExtractor creates extractors for multiple providers
+func NewMultiExtractors(providers []Provider, config *Config) (map[Provider]TopicExtractor, error) {
+	extractors := make(map[Provider]TopicExtractor)
+
+	for _, provider := range providers {
+		extractor, err := NewExtractor(provider, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create %s extractor: %w", provider, err)
+		}
+		extractors[provider] = extractor
+	}
+
+	return extractors, nil
+}

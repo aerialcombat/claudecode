@@ -1,0 +1,159 @@
+<!-- Delete Confirmation Component -->
+<!-- Delete with confirmation dialog -->
+
+{{define "delete-button"}}
+<button class="btn-delete"
+        hx-delete="/api/items/{{.ID}}"
+        hx-confirm="정말 삭제하시겠습니까?"
+        hx-target="closest .item"
+        hx-swap="outerHTML swap:300ms"
+        hx-indicator="#delete-loading-{{.ID}}">
+    삭제
+</button>
+<span id="delete-loading-{{.ID}}" class="htmx-indicator">
+    삭제 중...
+</span>
+{{end}}
+
+{{define "delete-with-undo"}}
+<!-- Delete with undo option -->
+<div class="item" id="item-{{.ID}}">
+    <div class="item-content">
+        <h3>{{.Title}}</h3>
+        <p>{{.Description}}</p>
+    </div>
+    <button class="btn-delete"
+            hx-delete="/api/items/{{.ID}}"
+            hx-confirm="삭제하시겠습니까?"
+            hx-target="#item-{{.ID}}"
+            hx-swap="outerHTML">
+        삭제
+    </button>
+</div>
+{{end}}
+
+{{define "delete-success"}}
+<!-- Success message with undo (returned by server) -->
+<div class="item-deleted" id="item-{{.ID}}">
+    <div class="delete-message">
+        ✓ 삭제되었습니다
+        <button class="btn-undo"
+                hx-post="/api/items/{{.ID}}/restore"
+                hx-target="#item-{{.ID}}"
+                hx-swap="outerHTML">
+            실행취소
+        </button>
+    </div>
+</div>
+{{end}}
+
+{{define "bulk-delete"}}
+<!-- Bulk delete with selection -->
+<div class="bulk-actions">
+    <input type="checkbox"
+           id="select-all"
+           onchange="toggleAll(this)">
+    <label for="select-all">전체 선택</label>
+
+    <button class="btn-bulk-delete"
+            hx-delete="/api/items/bulk"
+            hx-confirm="선택한 항목을 삭제하시겠습니까?"
+            hx-include="[name='item-ids']:checked"
+            hx-target="#item-list"
+            hx-indicator="#bulk-loading">
+        선택 삭제
+    </button>
+    <span id="bulk-loading" class="htmx-indicator">
+        삭제 중...
+    </span>
+</div>
+
+<div id="item-list">
+    {{range .Items}}
+    <div class="item">
+        <input type="checkbox" name="item-ids" value="{{.ID}}">
+        <span>{{.Title}}</span>
+    </div>
+    {{end}}
+</div>
+
+<script>
+function toggleAll(checkbox) {
+    document.querySelectorAll('[name="item-ids"]').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+</script>
+{{end}}
+
+<style>
+.btn-delete {
+    padding: 6px 16px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.item-deleted {
+    padding: 16px;
+    background-color: #f0f0f0;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.delete-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #666;
+}
+
+.btn-undo {
+    padding: 4px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.btn-bulk-delete {
+    padding: 6px 16px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.htmx-indicator {
+    display: none;
+    color: #666;
+    font-size: 13px;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline;
+}
+</style>

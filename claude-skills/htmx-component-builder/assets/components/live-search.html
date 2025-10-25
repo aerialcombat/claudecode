@@ -1,0 +1,350 @@
+<!-- Live Search Component -->
+<!-- Real-time search with Korean IME support -->
+
+{{define "live-search"}}
+<div class="search-container">
+    <form class="search-form">
+        <div class="search-input-wrapper">
+            <input type="text"
+                   id="search-input"
+                   name="q"
+                   class="search-input korean-input"
+                   hx-get="/api/search"
+                   hx-trigger="keyup changed delay:500ms"
+                   hx-target="#search-results"
+                   hx-indicator="#search-loading"
+                   placeholder="검색어를 입력하세요"
+                   value="{{.Query}}"
+                   autocomplete="off"
+                   aria-label="검색">
+
+            <button type="button"
+                    class="btn-clear"
+                    onclick="clearSearch()"
+                    style="display: {{if .Query}}inline{{else}}none{{end}}">
+                ✕
+            </button>
+        </div>
+
+        <div id="search-loading" class="htmx-indicator loading-indicator">
+            <span class="spinner"></span>
+            <span>검색 중...</span>
+        </div>
+    </form>
+
+    <div id="search-results" class="search-results">
+        {{if .Results}}
+            {{template "search-results" .}}
+        {{else if .Query}}
+            <div class="no-results korean-text">
+                검색 결과가 없습니다
+            </div>
+        {{end}}
+    </div>
+</div>
+
+<script>
+// Korean IME handling
+(function() {
+    let isComposing = false;
+    const input = document.getElementById('search-input');
+    const clearBtn = input.nextElementSibling;
+
+    input.addEventListener('compositionstart', () => {
+        isComposing = true;
+        console.log('한글 입력 시작');
+    });
+
+    input.addEventListener('compositionend', () => {
+        isComposing = false;
+        console.log('한글 입력 완료');
+        htmx.trigger(input, 'keyup');
+    });
+
+    input.addEventListener('keyup', (e) => {
+        if (isComposing) {
+            e.stopPropagation();
+            return false;
+        }
+
+        // Show/hide clear button
+        clearBtn.style.display = input.value ? 'inline' : 'none';
+    });
+
+    input.addEventListener('input', () => {
+        clearBtn.style.display = input.value ? 'inline' : 'none';
+    });
+})();
+
+function clearSearch() {
+    const input = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+    input.value = '';
+    results.innerHTML = '';
+    input.focus();
+    document.querySelector('.btn-clear').style.display = 'none';
+}
+</script>
+{{end}}
+
+{{define "search-results"}}
+<div class="results-header korean-text">
+    <span class="results-count">검색 결과 {{.Count}}개</span>
+</div>
+
+<div class="results-list">
+    {{range .Results}}
+    <div class="result-item">
+        <a href="{{.URL}}" class="result-link">
+            {{if .Thumbnail}}
+            <div class="result-thumbnail">
+                <img src="{{.Thumbnail}}" alt="{{.Title}}" loading="lazy">
+            </div>
+            {{end}}
+
+            <div class="result-content">
+                <h3 class="result-title korean-text">{{.Title}}</h3>
+                <p class="result-excerpt korean-text">{{.Excerpt}}</p>
+
+                <div class="result-meta korean-text">
+                    {{if .Source}}
+                    <span class="meta-source">{{.Source}}</span>
+                    <span class="meta-separator">·</span>
+                    {{end}}
+                    <span class="meta-date">{{.FormattedDate}}</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    {{end}}
+</div>
+
+{{if .HasMore}}
+<div class="load-more">
+    <button class="btn-load-more"
+            hx-get="/api/search?q={{.Query}}&page={{.NextPage}}"
+            hx-target=".results-list"
+            hx-swap="beforeend">
+        더 보기
+    </button>
+</div>
+{{end}}
+{{end}}
+
+<style>
+.search-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.search-form {
+    margin-bottom: 20px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    font-size: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+    font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #0066cc;
+}
+
+.search-input[data-composing="true"] {
+    border-color: #ff9900;
+}
+
+.btn-clear {
+    position: absolute;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition: background-color 0.2s;
+}
+
+.btn-clear:hover {
+    background: #bbb;
+}
+
+.loading-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: #666;
+    font-size: 14px;
+}
+
+.htmx-request .loading-indicator {
+    display: flex;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0066cc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.search-results {
+    min-height: 100px;
+}
+
+.results-header {
+    padding: 8px 0;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.results-count {
+    font-size: 14px;
+    color: #666;
+}
+
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.result-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.result-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.result-link {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.result-thumbnail {
+    flex-shrink: 0;
+    width: 120px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+.result-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    word-break: keep-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.result-excerpt {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.result-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #999;
+}
+
+.meta-separator {
+    color: #ddd;
+}
+
+.no-results {
+    padding: 40px;
+    text-align: center;
+    color: #999;
+}
+
+.load-more {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.btn-load-more {
+    padding: 10px 24px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-load-more:hover {
+    background-color: #f8f9fa;
+    border-color: #0066cc;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .result-link {
+        flex-direction: column;
+    }
+
+    .result-thumbnail {
+        width: 100%;
+        height: 150px;
+    }
+}
+</style>

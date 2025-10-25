@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Components Demo - Korean Optimized</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        :root {
+            --font-korean: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif;
+            --color-primary: #0066cc;
+            --color-success: #28a745;
+            --color-danger: #dc3545;
+            --color-warning: #ffc107;
+            --color-border: #e0e0e0;
+            --color-bg: #f8f9fa;
+            --spacing: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-korean);
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-bg);
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid var(--color-border);
+            padding: 20px 0;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .subtitle {
+            margin: 0;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            margin: 0 0 20px;
+            font-size: 24px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        .section-description {
+            margin-bottom: 20px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .demo-area {
+            background: #f8f9fa;
+            border: 1px dashed var(--color-border);
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 150px;
+        }
+
+        .korean-text {
+            word-break: keep-all;
+            letter-spacing: -0.3px;
+            line-height: 1.6;
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid var(--color-warning);
+            padding: 12px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* Button styles */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0052a3;
+        }
+
+        .btn-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--color-danger);
+            color: white;
+        }
+
+        /* Loading indicator */
+        .htmx-indicator {
+            display: none;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline;
+        }
+
+        /* Component-specific styles would go in their respective files */
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>HTMX Components Demo</h1>
+            <p class="subtitle korean-text">
+                한글 최적화 HTMX 컴포넌트 데모 페이지
+            </p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Live Search Demo -->
+        <section class="section">
+            <h2 class="section-title">1. Live Search (실시간 검색)</h2>
+            <p class="section-description korean-text">
+                입력하면서 실시간으로 검색 결과를 표시합니다. 한글 IME 처리가 포함되어 있습니다.
+            </p>
+
+            <div class="note">
+                <div class="note-title">💡 한글 IME 처리</div>
+                <div class="korean-text">
+                    이 컴포넌트는 한글 조합 중에는 검색을 트리거하지 않고, 조합이 완료된 후에만 검색합니다.
+                    <code>compositionstart</code>와 <code>compositionend</code> 이벤트를 활용합니다.
+                </div>
+            </div>
+
+            <div class="demo-area">
+                <!-- Live search component would be included here -->
+                <div class="search-container">
+                    <input type="text"
+                           id="demo-search"
+                           placeholder="검색어를 입력하세요"
+                           class="korean-input"
+                           style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                    <div id="search-results" style="margin-top: 16px; color: #666;">
+                        검색 결과가 여기에 표시됩니다
+                    </div>
+                </div>
+
+                <script>
+                // Demo Korean IME handling
+                (function() {
+                    let isComposing = false;
+                    const input = document.getElementById('demo-search');
+                    const results = document.getElementById('search-results');
+
+                    input.addEventListener('compositionstart', () => {
+                        isComposing = true;
+                        results.textContent = '🔤 한글 입력 중...';
+                    });
+
+                    input.addEventListener('compositionend', () => {
+                        isComposing = false;
+                        results.textContent = '✓ 한글 입력 완료: ' + input.value;
+                    });
+
+                    input.addEventListener('input', () => {
+                        if (!isComposing && input.value) {
+                            results.textContent = '🔍 검색 중: ' + input.value;
+                        }
+                    });
+                })();
+                </script>
+            </div>
+        </section>
+
+        <!-- Infinite Scroll Demo -->
+        <section class="section">
+            <h2 class="section-title">2. Infinite Scroll (무한 스크롤)</h2>
+            <p class="section-description korean-text">
+                스크롤하면 자동으로 더 많은 콘텐츠를 불러옵니다. <code>hx-trigger="revealed"</code>를 사용합니다.
+            </p>
+
+            <div class="demo-area">
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 16px;">
+                    <div class="content-item" style="padding: 12px; border-bottom: 1px solid #eee;">
+                        <h3 style="margin: 0 0 8px;">콘텐츠 항목 1</h3>
+                        <p class="korean-text" style="margin: 0; color: #666;">
+                            스크롤 내리면 더 많은 항목이 로드됩니다
+                        </p>
+                    </div>
+                    <div class="content-item" style="padding: 12px; border-bottom: 1px solid #eee;">
+                        <h3 style="margin: 0 0 8px;">콘텐츠 항목 2</h3>
+                        <p class="korean-text" style="margin: 0; color: #666;">
+                            각 항목은 독립적으로 렌더링됩니다
+                        </p>
+                    </div>
+                    <div class="content-item" style="padding: 12px; border-bottom: 1px solid #eee;">
+                        <h3 style="margin: 0 0 8px;">콘텐츠 항목 3</h3>
+                        <p class="korean-text" style="margin: 0; color: #666;">
+                            무한 스크롤은 사용자 경험을 향상시킵니다
+                        </p>
+                    </div>
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        ⬇️ 스크롤하여 더 불러오기
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal Demo -->
+        <section class="section">
+            <h2 class="section-title">3. Modal (모달)</h2>
+            <p class="section-description korean-text">
+                동적으로 콘텐츠를 로드하는 모달 컴포넌트입니다. 서버에서 HTML을 받아 표시합니다.
+            </p>
+
+            <div class="demo-area">
+                <button class="btn btn-primary" onclick="showDemoModal()">
+                    모달 열기
+                </button>
+
+                <div id="modal-container"></div>
+
+                <script>
+                function showDemoModal() {
+                    const modalHTML = `
+                        <div class="modal-overlay" onclick="closeDemoModal()" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+                            <div class="modal-dialog" onclick="event.stopPropagation()" style="background: white; border-radius: 12px; max-width: 500px; width: 90%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h3 style="margin: 0;">데모 모달</h3>
+                                    <button onclick="closeDemoModal()" style="border: none; background: none; font-size: 24px; cursor: pointer;">✕</button>
+                                </div>
+                                <div class="korean-text">
+                                    <p>이것은 HTMX로 동적으로 로드된 모달입니다.</p>
+                                    <p>실제 구현에서는 서버에서 콘텐츠를 가져와 표시합니다.</p>
+                                </div>
+                                <div style="text-align: right; margin-top: 20px;">
+                                    <button class="btn btn-primary" onclick="closeDemoModal()">확인</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('modal-container').innerHTML = modalHTML;
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeDemoModal() {
+                    document.getElementById('modal-container').innerHTML = '';
+                    document.body.style.overflow = '';
+                }
+                </script>
+            </div>
+        </section>
+
+        <!-- Delete Confirmation Demo -->
+        <section class="section">
+            <h2 class="section-title">4. Delete Confirmation (삭제 확인)</h2>
+            <p class="section-description korean-text">
+                삭제 전에 확인 다이얼로그를 표시합니다. <code>hx-confirm</code> 속성을 사용합니다.
+            </p>
+
+            <div class="demo-area">
+                <div id="delete-demo-item" style="padding: 16px; background: white; border: 1px solid #ddd; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0 0 8px;">삭제 가능한 항목</h4>
+                        <p class="korean-text" style="margin: 0; color: #666;">
+                            이 항목을 삭제할 수 있습니다
+                        </p>
+                    </div>
+                    <button class="btn btn-danger" onclick="confirmDelete()">
+                        삭제
+                    </button>
+                </div>
+
+                <script>
+                function confirmDelete() {
+                    if (confirm('정말 삭제하시겠습니까?')) {
+                        const item = document.getElementById('delete-demo-item');
+                        item.style.opacity = '0';
+                        item.style.transition = 'opacity 0.3s';
+                        setTimeout(() => {
+                            item.innerHTML = '<div style="text-align: center; padding: 16px; color: #28a745;">✓ 삭제되었습니다</div>';
+                            item.style.opacity = '1';
+                        }, 300);
+                    }
+                }
+                </script>
+            </div>
+        </section>
+
+        <!-- Inline Edit Demo -->
+        <section class="section">
+            <h2 class="section-title">5. Inline Edit (인라인 수정)</h2>
+            <p class="section-description korean-text">
+                클릭하여 바로 수정할 수 있는 필드입니다. 수정 모드와 표시 모드를 전환합니다.
+            </p>
+
+            <div class="demo-area">
+                <div id="editable-field" style="padding: 12px; border: 1px solid transparent; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" onmouseover="this.style.borderColor='#e0e0e0'; this.style.backgroundColor='#f9f9f9'" onmouseout="if(!this.classList.contains('editing')) { this.style.borderColor='transparent'; this.style.backgroundColor='transparent'; }">
+                    <span id="field-value" class="korean-text">수정 가능한 텍스트</span>
+                    <button onclick="startEdit()" style="border: none; background: none; cursor: pointer; font-size: 14px;">✏️</button>
+                </div>
+
+                <script>
+                function startEdit() {
+                    const field = document.getElementById('editable-field');
+                    const valueSpan = document.getElementById('field-value');
+                    const currentValue = valueSpan.textContent;
+
+                    field.classList.add('editing');
+                    field.style.borderColor = '#0066cc';
+                    field.innerHTML = `
+                        <input type="text" value="${currentValue}" id="edit-input" class="korean-input" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <button onclick="saveEdit()" class="btn" style="padding: 4px 12px; background: #0066cc; color: white; font-size: 13px;">저장</button>
+                        <button onclick="cancelEdit('${currentValue}')" class="btn" style="padding: 4px 12px; background: #f0f0f0; font-size: 13px;">취소</button>
+                    `;
+                    document.getElementById('edit-input').focus();
+                }
+
+                function saveEdit() {
+                    const input = document.getElementById('edit-input');
+                    const newValue = input.value;
+                    const field = document.getElementById('editable-field');
+
+                    field.classList.remove('editing');
+                    field.style.borderColor = 'transparent';
+                    field.style.backgroundColor = 'transparent';
+                    field.innerHTML = `
+                        <span id="field-value" class="korean-text">${newValue}</span>
+                        <button onclick="startEdit()" style="border: none; background: none; cursor: pointer; font-size: 14px;">✏️</button>
+                    `;
+                }
+
+                function cancelEdit(originalValue) {
+                    const field = document.getElementById('editable-field');
+                    field.classList.remove('editing');
+                    field.style.borderColor = 'transparent';
+                    field.style.backgroundColor = 'transparent';
+                    field.innerHTML = `
+                        <span id="field-value" class="korean-text">${originalValue}</span>
+                        <button onclick="startEdit()" style="border: none; background: none; cursor: pointer; font-size: 14px;">✏️</button>
+                    `;
+                }
+                </script>
+            </div>
+        </section>
+
+        <!-- Component Links -->
+        <section class="section">
+            <h2 class="section-title">📚 사용 가능한 컴포넌트</h2>
+            <div class="korean-text">
+                <h3>🟢 Simple Components (간단한 컴포넌트)</h3>
+                <ul>
+                    <li><code>inline-edit.html</code> - 클릭하여 수정</li>
+                    <li><code>delete-confirm.html</code> - 삭제 확인</li>
+                    <li><code>toggle.html</code> - 표시/숨김 전환</li>
+                    <li><code>boosted-links.html</code> - 프로그레시브 향상</li>
+                    <li><code>live-badge.html</code> - 자동 업데이트 뱃지</li>
+                </ul>
+
+                <h3>🟡 Medium Components (중급 컴포넌트)</h3>
+                <ul>
+                    <li><code>live-search.html</code> - 실시간 검색</li>
+                    <li><code>pagination.html</code> - 페이지네이션</li>
+                    <li><code>tabs.html</code> - 탭 네비게이션</li>
+                    <li><code>dropdown.html</code> - 드롭다운 메뉴</li>
+                    <li><code>sort-filter.html</code> - 정렬/필터</li>
+                </ul>
+
+                <h3>🔴 Complex Components (고급 컴포넌트)</h3>
+                <ul>
+                    <li><code>infinite-scroll.html</code> - 무한 스크롤</li>
+                    <li><code>modal.html</code> - 모달 다이얼로그</li>
+                    <li><code>form.html</code> - 다단계 폼</li>
+                    <li><code>autocomplete.html</code> - 자동완성</li>
+                    <li><code>drag-drop.html</code> - 드래그앤드롭 정렬</li>
+                </ul>
+
+                <h3>🔧 Go Handlers</h3>
+                <ul>
+                    <li><code>search_handler.go.tmpl</code> - 검색 핸들러</li>
+                    <li><code>content_handler.go.tmpl</code> - CRUD 핸들러</li>
+                    <li><code>htmx_helpers.go.tmpl</code> - 유틸리티 함수</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Usage Instructions -->
+        <section class="section">
+            <h2 class="section-title">🚀 사용 방법</h2>
+            <div class="korean-text">
+                <h3>1. 컴포넌트 생성</h3>
+                <pre style="background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto;"><code>python scripts/generate_component.py \
+  --type search \
+  --name topic-search \
+  --korean \
+  --go-handler \
+  --output /path/to/project/</code></pre>
+
+                <h3>2. 템플릿 분석</h3>
+                <pre style="background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto;"><code>python scripts/analyze_templates.py \
+  --path /path/to/templates/ \
+  --priority</code></pre>
+
+                <h3>3. 테스트 페이지 생성</h3>
+                <pre style="background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto;"><code>python scripts/test_component.py \
+  --component search \
+  --output test-search.html</code></pre>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 40px 0; color: #999; border-top: 1px solid var(--color-border); margin-top: 40px;">
+            <p class="korean-text">
+                <strong>HTMX Component Builder Skill</strong><br>
+                한글 최적화 HTMX 컴포넌트 생성 도구
+            </p>
+            <p style="font-size: 13px;">
+                Version 1.0.0 | 2025-10-25
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

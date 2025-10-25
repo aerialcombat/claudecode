@@ -1,0 +1,102 @@
+<!-- Inline Edit Component -->
+<!-- Click to edit text in place -->
+
+{{define "inline-edit"}}
+<!-- Display mode -->
+<div id="edit-field-{{.ID}}"
+     class="editable-field korean-text"
+     hx-get="/api/edit/{{.ID}}"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <span class="field-value">{{.Value}}</span>
+    <button class="btn-edit" aria-label="수정">✏️</button>
+</div>
+{{end}}
+
+{{define "inline-edit-form"}}
+<!-- Edit mode (returned by server) -->
+<form id="edit-field-{{.ID}}"
+      class="editable-field editing"
+      hx-post="/api/save/{{.ID}}"
+      hx-target="this"
+      hx-swap="outerHTML">
+    <input type="text"
+           name="value"
+           value="{{.Value}}"
+           class="korean-input edit-input"
+           autofocus>
+    <button type="submit" class="btn-save">저장</button>
+    <button type="button"
+            class="btn-cancel"
+            hx-get="/api/cancel/{{.ID}}"
+            hx-target="#edit-field-{{.ID}}"
+            hx-swap="outerHTML">
+        취소
+    </button>
+</form>
+{{end}}
+
+<style>
+.editable-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+.editable-field:hover {
+    border-color: #e0e0e0;
+    background-color: #f9f9f9;
+}
+
+.field-value {
+    min-width: 100px;
+}
+
+.btn-edit {
+    opacity: 0;
+    transition: opacity 0.2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.editable-field:hover .btn-edit {
+    opacity: 1;
+}
+
+.editing {
+    border-color: #0066cc;
+    background-color: #fff;
+}
+
+.edit-input {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-save,
+.btn-cancel {
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-save {
+    background-color: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+.btn-cancel {
+    background-color: white;
+}
+</style>

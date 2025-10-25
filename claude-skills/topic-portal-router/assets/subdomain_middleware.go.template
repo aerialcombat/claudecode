@@ -1,0 +1,64 @@
+package middleware
+
+import (
+	"context"
+	"net/http"
+	"strings"
+)
+
+// ContextKey is a type for context keys to avoid collisions
+type ContextKey string
+
+const (
+	// SubdomainKey is the context key for subdomain values
+	SubdomainKey ContextKey = "subdomain"
+	// CacheKeyKey is the context key for cache key values
+	CacheKeyKey ContextKey = "cache_key"
+)
+
+// SubdomainExtractor extracts subdomain from request host and adds it to context
+func SubdomainExtractor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := r.Host
+
+		// Remove port if present
+		if strings.Contains(host, ":") {
+			host = strings.Split(host, ":")[0]
+		}
+
+		// Handle localhost (development)
+		if host == "localhost" || strings.HasPrefix(host, "127.0.0.1") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Extract subdomain (assumes format: subdomain.domain.tld)
+		parts := strings.Split(host, ".")
+		var subdomain string
+		if len(parts) > 2 {
+			subdomain = parts[0]
+		}
+
+		// Skip if no subdomain or if it's www
+		if subdomain == "" || subdomain == "www" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Add subdomain to context
+		ctx := context.WithValue(r.Context(), SubdomainKey, subdomain)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// GetSubdomain retrieves subdomain from request context
+func GetSubdomain(r *http.Request) (string, bool) {
+	subdomain, ok := r.Context().Value(SubdomainKey).(string)
+	return subdomain, ok
+}
+
+// GetCacheKey retrieves cache key from request context
+func GetCacheKey(r *http.Request) (string, bool) {
+	cacheKey, ok := r.Context().Value(CacheKeyKey).(string)
+	return cacheKey, ok
+}
